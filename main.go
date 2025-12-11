@@ -7,6 +7,7 @@ import (
 	"path"
 	"runtime"
 	"strings"
+	"time"
 
 	elasticsearch "github.com/elastic/go-elasticsearch/v9"
 	"github.com/jessevdk/go-flags"
@@ -110,5 +111,15 @@ func startHttpServer(exporter *AlertmanagerElasticsearchExporter) {
 
 	http.HandleFunc("/webhook", exporter.HttpHandler)
 	http.Handle("/metrics", promhttp.Handler())
-	log.Fatal(http.ListenAndServe(opts.ServerBind, nil))
+
+	server := &http.Server{
+		Addr:         opts.ServerBind,
+		ReadTimeout:  20 * time.Second,
+		WriteTimeout: 20 * time.Second,
+		IdleTimeout:  30 * time.Second,
+	}
+	log.Printf("Starting HTTP server on %s", opts.ServerBind)
+	if err := server.ListenAndServe(); err != nil {
+		log.Fatalf("Failed to start HTTP server: %v", err)
+	}
 }
