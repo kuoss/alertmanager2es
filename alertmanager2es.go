@@ -113,9 +113,9 @@ func (e *AlertmanagerElasticsearchExporter) ConnectElasticsearch(cfg elasticsear
 func (e *AlertmanagerElasticsearchExporter) buildIndexName(createTime time.Time) string {
 	ret := e.elasticsearchIndexName
 
-	ret = strings.Replace(ret, "%y", createTime.Format("2006"), -1)
-	ret = strings.Replace(ret, "%m", createTime.Format("01"), -1)
-	ret = strings.Replace(ret, "%d", createTime.Format("02"), -1)
+	ret = strings.ReplaceAll(ret, "%y", createTime.Format("2006"))
+	ret = strings.ReplaceAll(ret, "%m", createTime.Format("01"))
+	ret = strings.ReplaceAll(ret, "%d", createTime.Format("02"))
 
 	return ret
 }
@@ -138,7 +138,9 @@ func (e *AlertmanagerElasticsearchExporter) HttpHandler(w http.ResponseWriter, r
 		log.Error(err)
 		return
 	}
-	defer r.Body.Close()
+	defer func() {
+		_ = r.Body.Close()
+	}()
 
 	var msg AlertmanagerEntry
 	err = json.Unmarshal(b, &msg)
@@ -174,7 +176,9 @@ func (e *AlertmanagerElasticsearchExporter) HttpHandler(w http.ResponseWriter, r
 		log.Error(err)
 		return
 	}
-	defer res.Body.Close()
+	defer func() {
+		_ = res.Body.Close()
+	}()
 
 	log.Debugf("received and stored alert: %v", msg.CommonLabels)
 	e.prometheus.alertsSuccessful.WithLabelValues().Inc()

@@ -1,11 +1,13 @@
-PROJECT_NAME		:= $(shell basename $(CURDIR))
-GIT_TAG				:= $(shell git describe --dirty --tags --always)
-GIT_COMMIT			:= $(shell git rev-parse --short HEAD)
-LDFLAGS				:= -X "main.gitTag=$(GIT_TAG)" -X "main.gitCommit=$(GIT_COMMIT)" -extldflags "-static" -s -w
+PROJECT_NAME	:= $(shell basename $(CURDIR))
+GIT_TAG			:= $(shell git describe --dirty --tags --always)
+GIT_COMMIT		:= $(shell git rev-parse --short HEAD)
+LDFLAGS			:= -X "main.gitTag=$(GIT_TAG)" -X "main.gitCommit=$(GIT_COMMIT)" -extldflags "-static" -s -w
 
-FIRST_GOPATH			:= $(firstword $(subst :, ,$(shell go env GOPATH)))
-GOLANGCI_LINT_BIN		:= $(FIRST_GOPATH)/bin/golangci-lint
-GOSEC_BIN				:= $(FIRST_GOPATH)/bin/gosec
+FIRST_GOPATH	:= $(firstword $(subst :, ,$(shell go env GOPATH)))
+GOLANGCI_LINT   := $(shell pwd)/bin/golangci-lint
+GOSEC_BIN		:= $(shell pwd)/bin/gosec
+
+GOLANGCI_LINT_VERSION := v2.7.2
 
 .PHONY: all
 all: build
@@ -44,15 +46,18 @@ dependencies:
 check-release: vendor lint gosec test
 
 .PHONY: lint
-lint: $(GOLANGCI_LINT_BIN)
-	$(GOLANGCI_LINT_BIN) run -E exportloopref,gofmt --timeout=30m
+lint: golangci-lint
+	$(GOLANGCI_LINT) run
 
 .PHONY: gosec
 gosec: $(GOSEC_BIN)
 	$(GOSEC_BIN) ./...
 
-$(GOLANGCI_LINT_BIN):
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(FIRST_GOPATH)/bin
+.PHONY: golangci-lint
+golangci-lint: $(GOLANGCI_LINT)
+$(GOLANGCI_LINT):
+	mkdir -p ./bin
+	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/$(GOLANGCI_LINT_VERSION)/install.sh \
+		| sed -e '/install -d/d' \
+		| sh -s -- -b ./bin $(GOLANGCI_LINT_VERSION)
 
-$(GOSEC_BIN):
-	curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b $(FIRST_GOPATH)/bin
