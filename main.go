@@ -8,16 +8,12 @@ import (
 	"runtime"
 	"strings"
 
-	elasticsearch "github.com/elastic/go-elasticsearch/v7"
+	elasticsearch "github.com/elastic/go-elasticsearch/v9"
 	"github.com/jessevdk/go-flags"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/webdevops/alertmanager2es/config"
-)
-
-const (
-	Author = "webdevops.io"
+	"github.com/kuoss/alertmanager2es/config"
 )
 
 var (
@@ -32,7 +28,7 @@ var (
 func main() {
 	initArgparser()
 
-	log.Infof("starting alertmanager2es v%s (%s; %s; by %v)", gitTag, gitCommit, runtime.Version(), Author)
+	log.Infof("starting alertmanager2es v%s (%s; %s)", gitTag, gitCommit, runtime.Version())
 	log.Info(string(opts.GetJson()))
 
 	log.Infof("init exporter")

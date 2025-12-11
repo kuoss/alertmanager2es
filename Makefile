@@ -30,7 +30,7 @@ image: build
 
 build-push-development:
 	docker buildx create --use
-	docker buildx build -t webdevops/$(PROJECT_NAME):development --platform linux/amd64,linux/arm,linux/arm64 --push .
+	docker buildx build -t kuoss/$(PROJECT_NAME):development --platform linux/amd64,linux/arm,linux/arm64 --push .
 
 .PHONY: test
 test:

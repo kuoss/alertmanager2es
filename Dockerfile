@@ -1,12 +1,12 @@
 #############################################
 # Build
 #############################################
-FROM --platform=$BUILDPLATFORM golang:1.18-alpine as build
+FROM --platform=$BUILDPLATFORM golang:1.24-alpine as build
 
 RUN apk upgrade --no-cache --force
 RUN apk add --update build-base make git
 
-WORKDIR /go/src/github.com/webdevops/alertmanager2es
+WORKDIR /go/src/github.com/kuoss/alertmanager2es
 
 # Dependencies
 COPY go.mod go.sum .
@@ -24,7 +24,7 @@ RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} make build
 FROM gcr.io/distroless/static as test
 USER 0:0
 WORKDIR /app
-COPY --from=build /go/src/github.com/webdevops/alertmanager2es/alertmanager2es .
+COPY --from=build /go/src/github.com/kuoss/alertmanager2es/alertmanager2es .
 RUN ["./alertmanager2es", "--help"]
 
 #############################################

@@ -1,11 +1,10 @@
 # alertmanager2es
 
-[![license](https://img.shields.io/github/license/webdevops/alertmanager2es.svg)](https://github.com/webdevops/alertmanager2es/blob/master/LICENSE)
-[![DockerHub](https://img.shields.io/badge/DockerHub-webdevops%2Falertmanager2es-blue)](https://hub.docker.com/r/webdevops/alertmanager2es/)
-[![Quay.io](https://img.shields.io/badge/Quay.io-webdevops%2Falertmanager2es-blue)](https://quay.io/repository/webdevops/alertmanager2es)
+[![license](https://img.shields.io/github/license/kuoss/alertmanager2es.svg)](https://github.com/kuoss/alertmanager2es/blob/master/LICENSE)
+[![DockerHub](https://img.shields.io/badge/DockerHub-kuoss%2Falertmanager2es-blue)](https://hub.docker.com/r/kuoss/alertmanager2es/)
+[![Quay.io](https://img.shields.io/badge/Quay.io-kuoss%2Falertmanager2es-blue)](https://quay.io/repository/kuoss/alertmanager2es)
 
-This is a forked version of [cloudflare's alertmanager2es](https://github.com/cloudflare/alertmanager2es) with
-new golang layout and uses the official ElasticSearch client. It also supports Authentication.
+This is a forked version of [webdevops/alertmanager2es](https://github.com/webdevops/alertmanager2es) (originally developed by Cloudflare), featuring a new Go layout and utilizing the official ElasticSearch client. It also supports authentication.
 
 alertmanager2es receives [HTTP webhook][] notifications from [AlertManager][]
 and inserts them into an [Elasticsearch][] index for searching and analysis. It
@@ -95,7 +94,7 @@ To build alertmanager2es, you'll need:
 
 ## Building
 
-    git clone github.com/webdevops/alertmanager2elasticsearch
+    git clone github.com/kuoss/alertmanager2elasticsearch
     cd alertmanager2elasticsearch
     make vendor
     make build
