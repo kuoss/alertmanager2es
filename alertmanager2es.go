@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
-	elasticsearch "github.com/elastic/go-elasticsearch/v7"
-	"github.com/elastic/go-elasticsearch/v7/esapi"
+	elasticsearch "github.com/elastic/go-elasticsearch/v9"
+	"github.com/elastic/go-elasticsearch/v9/esapi"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 )
@@ -113,9 +113,9 @@ func (e *AlertmanagerElasticsearchExporter) ConnectElasticsearch(cfg elasticsear
 func (e *AlertmanagerElasticsearchExporter) buildIndexName(createTime time.Time) string {
 	ret := e.elasticsearchIndexName
 
-	ret = strings.Replace(ret, "%y", createTime.Format("2006"), -1)
-	ret = strings.Replace(ret, "%m", createTime.Format("01"), -1)
-	ret = strings.Replace(ret, "%d", createTime.Format("02"), -1)
+	ret = strings.ReplaceAll(ret, "%y", createTime.Format("2006"))
+	ret = strings.ReplaceAll(ret, "%m", createTime.Format("01"))
+	ret = strings.ReplaceAll(ret, "%d", createTime.Format("02"))
 
 	return ret
 }
@@ -131,14 +131,16 @@ func (e *AlertmanagerElasticsearchExporter) HttpHandler(w http.ResponseWriter, r
 		return
 	}
 
-	b, err := ioutil.ReadAll(r.Body)
+	b, err := io.ReadAll(r.Body)
 	if err != nil {
 		e.prometheus.alertsInvalid.WithLabelValues().Inc()
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
 		return
 	}
-	defer r.Body.Close()
+	defer func() {
+		_ = r.Body.Close()
+	}()
 
 	var msg AlertmanagerEntry
 	err = json.Unmarshal(b, &msg)
@@ -174,7 +176,9 @@ func (e *AlertmanagerElasticsearchExporter) HttpHandler(w http.ResponseWriter, r
 		log.Error(err)
 		return
 	}
-	defer res.Body.Close()
+	defer func() {
+		_ = res.Body.Close()
+	}()
 
 	log.Debugf("received and stored alert: %v", msg.CommonLabels)
 	e.prometheus.alertsSuccessful.WithLabelValues().Inc()

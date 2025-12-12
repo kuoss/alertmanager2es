@@ -7,17 +7,14 @@ import (
 	"path"
 	"runtime"
 	"strings"
+	"time"
 
-	elasticsearch "github.com/elastic/go-elasticsearch/v7"
+	elasticsearch "github.com/elastic/go-elasticsearch/v9"
 	"github.com/jessevdk/go-flags"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/webdevops/alertmanager2es/config"
-)
-
-const (
-	Author = "webdevops.io"
+	"github.com/kuoss/alertmanager2es/config"
 )
 
 var (
@@ -32,7 +29,7 @@ var (
 func main() {
 	initArgparser()
 
-	log.Infof("starting alertmanager2es v%s (%s; %s; by %v)", gitTag, gitCommit, runtime.Version(), Author)
+	log.Infof("starting alertmanager2es v%s (%s; %s)", gitTag, gitCommit, runtime.Version())
 	log.Info(string(opts.GetJson()))
 
 	log.Infof("init exporter")
@@ -114,5 +111,15 @@ func startHttpServer(exporter *AlertmanagerElasticsearchExporter) {
 
 	http.HandleFunc("/webhook", exporter.HttpHandler)
 	http.Handle("/metrics", promhttp.Handler())
-	log.Fatal(http.ListenAndServe(opts.ServerBind, nil))
+
+	server := &http.Server{
+		Addr:         opts.ServerBind,
+		ReadTimeout:  20 * time.Second,
+		WriteTimeout: 20 * time.Second,
+		IdleTimeout:  30 * time.Second,
+	}
+	log.Printf("Starting HTTP server on %s", opts.ServerBind)
+	if err := server.ListenAndServe(); err != nil {
+		log.Fatalf("Failed to start HTTP server: %v", err)
+	}
 }
