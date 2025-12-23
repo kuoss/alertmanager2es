@@ -28,8 +28,6 @@ Application Options:
                              [$OPENSEARCH_USERNAME]
       --opensearch.password= OpenSearch password for HTTP Basic Authentication
                              [$OPENSEARCH_PASSWORD]
-      --opensearch.apikey=   OpenSearch base64-encoded token for authorization; if set, overrides
-                             username and password [$OPENSEARCH_APIKEY]
       --opensearch.index=    OpenSearch index name (placeholders: %y for year, %m for month and %d
                              for day) (default: alertmanager-%y.%m) [$OPENSEARCH_INDEX]
       --bind=                Server address (default: :9097) [$SERVER_BIND]
