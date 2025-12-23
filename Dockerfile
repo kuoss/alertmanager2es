@@ -6,7 +6,7 @@ FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS build
 RUN apk upgrade --no-cache --force
 RUN apk add --update build-base make git
 
-WORKDIR /go/src/github.com/kuoss/alertmanager2es
+WORKDIR /go/src/github.com/kuoss/alertmanager2opensearch
 
 # Dependencies
 COPY go.mod go.sum .
@@ -24,8 +24,8 @@ RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} make build
 FROM gcr.io/distroless/static AS test
 USER 0:0
 WORKDIR /app
-COPY --from=build /go/src/github.com/kuoss/alertmanager2es/alertmanager2es .
-RUN ["./alertmanager2es", "--help"]
+COPY --from=build /go/src/github.com/kuoss/alertmanager2opensearch/alertmanager2opensearch .
+RUN ["./alertmanager2opensearch", "--help"]
 
 #############################################
 # Final
@@ -35,4 +35,4 @@ ENV LOG_JSON=1
 WORKDIR /
 COPY --from=test /app .
 USER 1000:1000
-ENTRYPOINT ["/alertmanager2es"]
+ENTRYPOINT ["/alertmanager2opensearch"]

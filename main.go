@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/jessevdk/go-flags"
-	"github.com/kuoss/alertmanager2es/config"
+	"github.com/kuoss/alertmanager2opensearch/config"
 	"github.com/opensearch-project/opensearch-go/v4"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
