@@ -1,4 +1,4 @@
-module github.com/kuoss/alertmanager2es
+module github.com/kuoss/alertmanager2opensearchd
 
 go 1.24.0
 
