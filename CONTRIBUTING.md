@@ -1,4 +1,4 @@
-# Contributing to alertmanager2es
+# Contributing to alertmanager2opensearch
 
 Contributions are welcomed.
 
@@ -6,7 +6,7 @@ Contributions are welcomed.
 
 To download, run:
 
-    go get -u github.com/kuoss/alertmanager2es
+    go get -u github.com/kuoss/alertmanager2opensearch
 
 To run the tests:
 

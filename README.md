@@ -1,70 +1,47 @@
-# alertmanager2es
+# alertmanager2opensearch
 
-[![license](https://img.shields.io/github/license/kuoss/alertmanager2es.svg)](https://github.com/kuoss/alertmanager2es/blob/master/LICENSE)
-[![DockerHub](https://img.shields.io/badge/DockerHub-kuoss%2Falertmanager2es-blue)](https://hub.docker.com/r/kuoss/alertmanager2es/)
-[![Quay.io](https://img.shields.io/badge/Quay.io-kuoss%2Falertmanager2es-blue)](https://quay.io/repository/kuoss/alertmanager2es)
+[![license](https://img.shields.io/github/license/kuoss/alertmanager2opensearch.svg)](https://github.com/kuoss/alertmanager2opensearch/blob/main/LICENSE)
 
-This is a forked version of [webdevops/alertmanager2es](https://github.com/webdevops/alertmanager2es) (originally developed by Cloudflare), featuring a new Go layout and utilizing the official ElasticSearch client. It also supports authentication.
+alertmanager2opensearch is a daemon that receives [HTTP webhook][] alerts from [Alertmanager][] and forwards them to [OpenSearch][], using the official OpenSearch client with built‑in authentication support.
 
-alertmanager2es receives [HTTP webhook][] notifications from [AlertManager][]
-and inserts them into an [Elasticsearch][] index for searching and analysis. It
-runs as a daemon.
+This repository is a fork of webdevops/alertmanager2es, which was developed by Cloudflare. The original project was designed for Elasticsearch; this fork adapts it to work with OpenSearch.
 
-The alerts are stored in Elasticsearch as [alert groups][].
+The alerts are stored in OpenSearch as [alert groups][].
 
 [alert groups]: https://prometheus.io/docs/alerting/alertmanager/#grouping
-[AlertManager]: https://github.com/prometheus/alertmanager
-[Elasticsearch]: https://www.elastic.co/products/elasticsearch
+[Alertmanager]: https://github.com/prometheus/alertmanager
+[OpenSearch]: https://opensearch.org
 [HTTP webhook]: https://prometheus.io/docs/alerting/configuration/#webhook-receiver-<webhook_config>
 
 ## Usage
 
 ```
 Usage:
-  alertmanager2es [OPTIONS]
+  alertmanager2opensearch [OPTIONS]
 
 Application Options:
-      --debug                   debug mode [$DEBUG]
-  -v, --verbose                 verbose mode [$VERBOSE]
-      --log.json                Switch log output to json format [$LOG_JSON]
-      --elasticsearch.address=  ElasticSearch urls [$ELASTICSEARCH_ADDRESS]
-      --elasticsearch.username= ElasticSearch username for HTTP Basic Authentication
-                                [$ELASTICSEARCH_USERNAME]
-      --elasticsearch.password= ElasticSearch password for HTTP Basic Authentication
-                                [$ELASTICSEARCH_PASSWORD]
-      --elasticsearch.apikey=   ElasticSearch base64-encoded token for authorization; if set, overrides
-                                username and password [$ELASTICSEARCH_APIKEY]
-      --elasticsearch.index=    ElasticSearch index name (placeholders: %y for year, %m for month and %d
-                                for day) (default: alertmanager-%y.%m) [$ELASTICSEARCH_INDEX]
-      --bind=                   Server address (default: :9097) [$SERVER_BIND]
+      --debug                debug mode [$DEBUG]
+  -v, --verbose              verbose mode [$VERBOSE]
+      --log.json             Switch log output to json format [$LOG_JSON]
+      --opensearch.address=  OpenSearch urls [$OPENSEARCH_ADDRESS]
+      --opensearch.username= OpenSearch username for HTTP Basic Authentication
+                             [$OPENSEARCH_USERNAME]
+      --opensearch.password= OpenSearch password for HTTP Basic Authentication
+                             [$OPENSEARCH_PASSWORD]
+      --opensearch.apikey=   OpenSearch base64-encoded token for authorization; if set, overrides
+                             username and password [$OPENSEARCH_APIKEY]
+      --opensearch.index=    OpenSearch index name (placeholders: %y for year, %m for month and %d
+                             for day) (default: alertmanager-%y.%m) [$OPENSEARCH_INDEX]
+      --bind=                Server address (default: :9097) [$SERVER_BIND]
 
 Help Options:
-  -h, --help                    Show this help message
+  -h, --help                 Show this help message
 ```
-
-
-## Rationale
-
-It can be useful to see which alerts fired over a given time period, and
-perform historical analysis of when and where alerts fired. Having this data
-can help:
-
-- tune alerting rules
-- understand the impact of an incident
-- understand which alerts fired during an incident
-
-It might have been possible to configure Alertmanager to send the alert groups
-to Elasticsearch directly, if not for the fact that [Elasticsearch][] [does not
-support unsigned integers][] at the time of writing. Alertmanager uses an
-unsigned integer for the `groupKey` field, which alertmanager2es converts to a
-string.
-
-[does not support unsigned integers]: https://github.com/elastic/elasticsearch/issues/13951
 
 ## Limitations
 
-- alertmanager2es will not capture [silenced][] or [inhibited][] alerts; the alert
-  notifications stored in Elasticsearch will closely resemble the notifications
+- alertmanager2opensearch will not capture [silenced][] or [inhibited][] alerts; the alert
+  notifications stored in OpenSearch will closely resemble the notifications
   received by a human.
 
 [silenced]: https://prometheus.io/docs/alerting/alertmanager/#silences
@@ -77,12 +54,12 @@ string.
 
 ## Prerequisites
 
-To use alertmanager2es, you'll need:
+To use alertmanager2opensearch, you'll need:
 
-- an [Elasticsearch][] cluster
+- an [OpenSearch][] cluster
 - [Alertmanager][] 0.6.0 or above
 
-To build alertmanager2es, you'll need:
+To build alertmanager2opensearch, you'll need:
 
 - [Make][]
 - [Go][] 1.14 or above
@@ -94,30 +71,30 @@ To build alertmanager2es, you'll need:
 
 ## Building
 
-    git clone github.com/kuoss/alertmanager2elasticsearch
-    cd alertmanager2elasticsearch
+    git clone github.com/kuoss/alertmanager2opensearch
+    cd alertmanager2opensearch
     make vendor
     make build
 
 ## Configuration
 
-### alertmanager2es usage
+### alertmanager2opensearch usage
 
-alertmanager2es is configured using commandline flags. It is assumed that
-alertmanager2es has unrestricted access to your Elasticsearch cluster.
+alertmanager2opensearch is configured using commandline flags. It is assumed that
+alertmanager2opensearch has unrestricted access to your OpenSearch cluster.
 
-alertmanager2es does not perform any user authentication.
+alertmanager2opensearch does not perform any user authentication.
 
-Run `./alertmanager2es -help` to view the configurable commandline flags.
+Run `./alertmanager2opensearch -help` to view the configurable commandline flags.
 
 ### Example Alertmanager configuration
 
 #### Receiver configuration
 
 ```yaml
-- name: alertmanager2es
+- name: alertmanager2opensearch
   webhook_configs:
-    - url: https://alertmanager2es.example.com/webhook
+    - url: https://alertmanager2opensearch.example.com/webhook
 ```
 
 #### Route configuration
@@ -125,13 +102,13 @@ Run `./alertmanager2es -help` to view the configurable commandline flags.
 By omitting a matcher, this route will match all alerts:
 
 ```yaml
-- receiver: alertmanager2es
+- receiver: alertmanager2opensearch
   continue: true
 ```
 
-### Example Elasticsearch template
+### Example OpenSearch template
 
-Apply this Elasticsearch template before you configure alertmanager2es to start
+Apply this OpenSearch template before you configure alertmanager2opensearch to start
 sending data:
 
 ```json
@@ -180,21 +157,21 @@ daily rotation in our case. Therefore our index name looks like:
 
 ## Failure modes
 
-alertmanager2es will return a HTTP 500 (Internal Server Error) if it encounters
-a non-2xx response from Elasticsearch. Therefore if Elasticsearch is down,
-alertmanager2es will respond to Alertmanager with a HTTP 500. No retries are
+alertmanager2opensearch will return a HTTP 500 (Internal Server Error) if it encounters
+a non-2xx response from OpenSearch. Therefore if OpenSearch is down,
+alertmanager2opensearch will respond to Alertmanager with a HTTP 500. No retries are
 made as Alertmanager has its own retry logic.
 
-Both the HTTP server exposed by alertmanager2es and the HTTP client that
-connects to Elasticsearch have read and write timeouts of 10 seconds.
+Both the HTTP server exposed by alertmanager2opensearch and the HTTP client that
+connects to OpenSearch have read and write timeouts of 10 seconds.
 
 ## Metrics
 
-alertmanager2es exposes [Prometheus][] metrics on `/metrics`.
+alertmanager2opensearch exposes [Prometheus][] metrics on `/metrics`.
 
 [Prometheus]: https://prometheus.io/
 
-## Example Elasticsearch queries
+## Example OpenSearch queries
 
     alerts.labels.alertname:"Disk_Likely_To_Fill_Next_4_Days"
 
