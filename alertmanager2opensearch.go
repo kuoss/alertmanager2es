@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	elasticsearch "github.com/elastic/go-elasticsearch/v9"
-	"github.com/elastic/go-elasticsearch/v9/esapi"
+	"github.com/opensearch-project/opensearch-go/v4"
+	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 )
@@ -20,9 +20,9 @@ import (
 const supportedWebhookVersion = "4"
 
 type (
-	AlertmanagerElasticsearchExporter struct {
-		elasticSearchClient    *elasticsearch.Client
-		elasticsearchIndexName string
+	AlertmanagerOpenSearchExporter struct {
+		openSearchClient    *opensearchapi.Client
+		openSearchIndexName string
 
 		prometheus struct {
 			alertsReceived   *prometheus.CounterVec
@@ -54,7 +54,7 @@ type (
 	}
 )
 
-func (e *AlertmanagerElasticsearchExporter) Init() {
+func (e *AlertmanagerOpenSearchExporter) Init() {
 	e.prometheus.alertsReceived = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "alertmanager2es_alerts_received",
@@ -83,22 +83,22 @@ func (e *AlertmanagerElasticsearchExporter) Init() {
 	prometheus.MustRegister(e.prometheus.alertsSuccessful)
 }
 
-func (e *AlertmanagerElasticsearchExporter) ConnectElasticsearch(cfg elasticsearch.Config, indexName string) {
+func (e *AlertmanagerOpenSearchExporter) ConnectOpenSearch(cfg opensearch.Config, indexName string) {
 	var err error
-	e.elasticSearchClient, err = elasticsearch.NewClient(cfg)
+	e.openSearchClient, err = opensearchapi.NewClient(opensearchapi.Config{Client: cfg})
 	if err != nil {
 		panic(err)
 	}
 
 	tries := 0
 	for {
-		_, err = e.elasticSearchClient.Info()
+		_, err = e.openSearchClient.Info(context.Background(), &opensearchapi.InfoReq{})
 		if err != nil {
 			tries++
 			if tries >= 5 {
 				panic(err)
 			} else {
-				log.Info("Failed to connect to ES, retry...")
+				log.Info("Failed to connect to OpenSearch, retry...")
 				time.Sleep(5 * time.Second)
 				continue
 			}
@@ -107,11 +107,11 @@ func (e *AlertmanagerElasticsearchExporter) ConnectElasticsearch(cfg elasticsear
 		break
 	}
 
-	e.elasticsearchIndexName = indexName
+	e.openSearchIndexName = indexName
 }
 
-func (e *AlertmanagerElasticsearchExporter) buildIndexName(createTime time.Time) string {
-	ret := e.elasticsearchIndexName
+func (e *AlertmanagerOpenSearchExporter) buildIndexName(createTime time.Time) string {
+	ret := e.openSearchIndexName
 
 	ret = strings.ReplaceAll(ret, "%y", createTime.Format("2006"))
 	ret = strings.ReplaceAll(ret, "%m", createTime.Format("01"))
@@ -120,7 +120,7 @@ func (e *AlertmanagerElasticsearchExporter) buildIndexName(createTime time.Time)
 	return ret
 }
 
-func (e *AlertmanagerElasticsearchExporter) HttpHandler(w http.ResponseWriter, r *http.Request) {
+func (e *AlertmanagerOpenSearchExporter) HttpHandler(w http.ResponseWriter, r *http.Request) {
 	e.prometheus.alertsReceived.WithLabelValues().Inc()
 
 	if r.Body == nil {
@@ -164,21 +164,18 @@ func (e *AlertmanagerElasticsearchExporter) HttpHandler(w http.ResponseWriter, r
 
 	incidentJson, _ := json.Marshal(msg)
 
-	req := esapi.IndexRequest{
+	req := opensearchapi.IndexReq{
 		Index: e.buildIndexName(now),
 		Body:  bytes.NewReader(incidentJson),
 	}
-	res, err := req.Do(context.Background(), e.elasticSearchClient)
+	_, err = e.openSearchClient.Index(context.Background(), req)
 	if err != nil {
 		e.prometheus.alertsInvalid.WithLabelValues().Inc()
-		err := fmt.Errorf("unable to insert document in elasticsearch")
+		err := fmt.Errorf("unable to insert document in opensearch")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		log.Error(err)
 		return
 	}
-	defer func() {
-		_ = res.Body.Close()
-	}()
 
 	log.Debugf("received and stored alert: %v", msg.CommonLabels)
 	e.prometheus.alertsSuccessful.WithLabelValues().Inc()

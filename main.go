@@ -9,12 +9,11 @@ import (
 	"strings"
 	"time"
 
-	elasticsearch "github.com/elastic/go-elasticsearch/v9"
 	"github.com/jessevdk/go-flags"
+	"github.com/kuoss/alertmanager2es/config"
+	"github.com/opensearch-project/opensearch-go/v4"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
-
-	"github.com/kuoss/alertmanager2es/config"
 )
 
 var (
@@ -33,19 +32,18 @@ func main() {
 	log.Info(string(opts.GetJson()))
 
 	log.Infof("init exporter")
-	exporter := &AlertmanagerElasticsearchExporter{}
+	exporter := &AlertmanagerOpenSearchExporter{}
 	exporter.Init()
 
-	cfg := elasticsearch.Config{
-		Addresses: opts.Elasticsearch.Addresses,
-		Username:  opts.Elasticsearch.Username,
-		Password:  opts.Elasticsearch.Password,
-		APIKey:    opts.Elasticsearch.ApiKey,
+	cfg := opensearch.Config{
+		Addresses: opts.OpenSearch.Addresses,
+		Username:  opts.OpenSearch.Username,
+		Password:  opts.OpenSearch.Password,
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 		},
 	}
-	exporter.ConnectElasticsearch(cfg, opts.Elasticsearch.Index)
+	exporter.ConnectOpenSearch(cfg, opts.OpenSearch.Index)
 
 	// daemon mode
 	log.Infof("starting http server on %s", opts.ServerBind)
@@ -101,7 +99,7 @@ func initArgparser() {
 }
 
 // start and handle prometheus handler
-func startHttpServer(exporter *AlertmanagerElasticsearchExporter) {
+func startHttpServer(exporter *AlertmanagerOpenSearchExporter) {
 	// healthz
 	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := fmt.Fprint(w, "Ok"); err != nil {
