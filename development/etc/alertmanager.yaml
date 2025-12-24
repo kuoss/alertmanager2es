@@ -1,3 +1,4 @@
+# alertmanager.yaml
 global:
   resolve_timeout: 5m
 
@@ -11,4 +12,4 @@ route:
 receivers:
   - name: default
     webhook_configs:
-      - url: http://host.docker.internal:8080/webhook
+      - url: http://localhost:9097/webhook

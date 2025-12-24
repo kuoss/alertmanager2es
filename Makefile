@@ -61,3 +61,6 @@ $(GOLANGCI_LINT):
 		| sed -e '/install -d/d' \
 		| sh -s -- -b ./bin $(GOLANGCI_LINT_VERSION)
 
+.PHONY: compose
+compose:
+	cd development; docker compose down; docker compose up -d

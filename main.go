@@ -26,10 +26,21 @@ var (
 )
 
 func main() {
-	initArgparser()
+	showHelp, err := initArgparser()
+	if err != nil {
+		log.Fatalf("Failed to init arg parser: %v", err)
+	}
+	if showHelp {
+		argparser.WriteHelp(os.Stdout)
+		os.Exit(0)
+	}
 
 	log.Infof("starting alertmanager2es v%s (%s; %s)", gitTag, gitCommit, runtime.Version())
-	log.Info(string(opts.GetJson()))
+	jsonString, err := opts.GetJson()
+	if err != nil {
+		log.Fatalf("Failed to get json: %v", err)
+	}
+	log.Info(jsonString)
 
 	log.Infof("init exporter")
 	exporter := &AlertmanagerOpenSearchExporter{}
@@ -43,7 +54,9 @@ func main() {
 			Proxy: http.ProxyFromEnvironment,
 		},
 	}
-	exporter.ConnectOpenSearch(cfg, opts.OpenSearch.Index)
+	if err := exporter.ConnectOpenSearch(cfg, opts.OpenSearch.Index); err != nil {
+		log.Fatalf("failed to connect OpenSearch: %v", err)
+	}
 
 	// daemon mode
 	log.Infof("starting http server on %s", opts.ServerBind)
@@ -51,27 +64,20 @@ func main() {
 }
 
 // init argparser and parse/validate arguments
-func initArgparser() {
+func initArgparser() (showHelp bool, err error) {
 	argparser = flags.NewParser(&opts, flags.Default)
-	_, err := argparser.Parse()
+	_, err = argparser.Parse()
 
-	// check if there is an parse error
 	if err != nil {
 		if flagsErr, ok := err.(*flags.Error); ok && flagsErr.Type == flags.ErrHelp {
-			os.Exit(0)
-		} else {
-			fmt.Println()
-			argparser.WriteHelp(os.Stdout)
-			os.Exit(1)
+			return true, nil
 		}
+		return false, fmt.Errorf("parse err: %w", err)
 	}
 
-	// verbose level
 	if opts.Logger.Verbose {
 		log.SetLevel(log.DebugLevel)
 	}
-
-	// debug level
 	if opts.Logger.Debug {
 		log.SetReportCaller(true)
 		log.SetLevel(log.TraceLevel)
@@ -83,8 +89,6 @@ func initArgparser() {
 			},
 		})
 	}
-
-	// json log format
 	if opts.Logger.LogJson {
 		log.SetReportCaller(true)
 		log.SetFormatter(&log.JSONFormatter{
@@ -96,6 +100,8 @@ func initArgparser() {
 			},
 		})
 	}
+
+	return false, nil
 }
 
 // start and handle prometheus handler
