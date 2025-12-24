@@ -1,60 +1,77 @@
-version: '3.4'
 services:
-
   ###########################
-  # ElasticSearch
+  # OpenSearch
   ###########################
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.6.0
-    container_name: es01
+  opensearch:
+    image: opensearchproject/opensearch:3
+    container_name: opensearch
     environment:
-      - node.name=es01
-      - cluster.name=es-docker-cluster
-      - discovery.seed_hosts=es01
-      - cluster.initial_master_nodes=es01
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - cluster.name=opensearch-cluster
+      - node.name=opensearch
+      - discovery.type=single-node
+      - DISABLE_SECURITY_PLUGIN=true
     ports:
-      - "9200:9200"
-      - "9300:9300"
+      - 9200:9200
+      - 9600:9600
 
   ###########################
-  # Kibana
+  # OpenSearch Dashboards
   ###########################
-  kibana:
-    image: docker.elastic.co/kibana/kibana:7.6.0
-    container_name: kibana
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:3
+    container_name: opensearch-dashboards
+    ports:
+      - 5601:5601
+    expose:
+      - "5601"
     environment:
-      SERVER_NAME: kibana
-      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-    ports:
-      - "5601:5601"
+      - OPENSEARCH_HOSTS=http://opensearch:9200
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
 
   ###########################
-  # PROMETHEUS
+  # Prometheus
   ###########################
   prometheus:
     image: prom/prometheus
+    container_name: prometheus
     command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.retention=600d"
-      - "--storage.tsdb.path=/prometheus"
-      - "--web.external-url=http://prometheus.admin.achenar.net"
-      - "--web.enable-lifecycle"
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.external-url=http://prometheus.admin.achenar.net
+      - --web.enable-lifecycle
     ports:
-      - "9090:9090"
+      - 9090:9090
+    expose:
+      - "9090"
     volumes:
       - ./etc/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
       - ./etc/prometheus.alerts.yaml:/etc/prometheus/prometheus.alerts.yaml:ro
 
   ###########################
-  # ALERTMANGER
+  # Alertmanager
   ###########################
   alertmanager:
     image: prom/alertmanager
+    container_name: alertmanager
     command:
-      - "--config.file=/etc/alertmanager/alertmanager.yml"
-      - "--storage.path=/alertmanager"
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
     ports:
-      - "9093:9093"
+      - 9093:9093
+    expose:
+      - "9093"
     volumes:
       - ./etc/alertmanager.yaml:/etc/alertmanager/alertmanager.yml:ro
+
+  ###########################
+  # Alertmanager2opensearch
+  ###########################
+  alertmanager2opensearch:
+    image: ghcr.io/kuoss/alertmanager2opensearch
+    container_name: alertmanager2opensearch
+    command:
+      - --opensearch.address=http://opensearch:9200
+    ports:
+      - 9097:9097
+    expose:
+      - "9097"
