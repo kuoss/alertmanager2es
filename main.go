@@ -70,10 +70,9 @@ func initArgparser() (showHelp bool, err error) {
 
 	if err != nil {
 		if flagsErr, ok := err.(*flags.Error); ok && flagsErr.Type == flags.ErrHelp {
-			showHelp = true
-			return
+			return true, nil
 		}
-		return
+		return false, fmt.Errorf("parse err: %w", err)
 	}
 
 	if opts.Logger.Verbose {
@@ -102,7 +101,7 @@ func initArgparser() (showHelp bool, err error) {
 		})
 	}
 
-	return
+	return false, nil
 }
 
 // start and handle prometheus handler
