@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"strings"
 	"time"
@@ -83,31 +84,32 @@ func (e *AlertmanagerOpenSearchExporter) Init() {
 	prometheus.MustRegister(e.prometheus.alertsSuccessful)
 }
 
-func (e *AlertmanagerOpenSearchExporter) ConnectOpenSearch(cfg opensearch.Config, indexName string) {
-	var err error
-	e.openSearchClient, err = opensearchapi.NewClient(opensearchapi.Config{Client: cfg})
+func (e *AlertmanagerOpenSearchExporter) ConnectOpenSearch(cfg opensearch.Config, indexName string) error {
+	cli, err := opensearchapi.NewClient(opensearchapi.Config{Client: cfg})
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("new client err: %w", err)
 	}
 
-	tries := 0
-	for {
-		_, err = e.openSearchClient.Info(context.Background(), &opensearchapi.InfoReq{})
-		if err != nil {
-			tries++
-			if tries >= 5 {
-				panic(err)
-			} else {
-				log.Info("Failed to connect to OpenSearch, retry...")
-				time.Sleep(5 * time.Second)
-				continue
-			}
+	maxRetries := cfg.MaxRetries
+	if maxRetries == 0 {
+		maxRetries = 10
+	}
+
+	for tries := 0; tries <= maxRetries; tries++ {
+		req := &opensearchapi.CatIndicesReq{}
+		_, err = cli.Cat.Indices(context.Background(), req)
+		if err == nil {
+			e.openSearchClient = cli
+			e.openSearchIndexName = indexName
+			return nil
 		}
 
-		break
+		delay := time.Duration(math.Pow(2, float64(tries))) * time.Second // Exponential backoff
+		log.Infof("Failed to connect to OpenSearch, retrying... [%d / %d]. Trying again after %v: %v", tries, maxRetries, delay, err)
+		time.Sleep(delay)
 	}
 
-	e.openSearchIndexName = indexName
+	return fmt.Errorf("failed to connect to OpenSearch after %d retries: %w", maxRetries, err)
 }
 
 func (e *AlertmanagerOpenSearchExporter) buildIndexName(createTime time.Time) string {
@@ -143,11 +145,10 @@ func (e *AlertmanagerOpenSearchExporter) HttpHandler(w http.ResponseWriter, r *h
 	}()
 
 	var msg AlertmanagerEntry
-	err = json.Unmarshal(b, &msg)
-	if err != nil {
+	if err := json.Unmarshal(b, &msg); err != nil {
 		e.prometheus.alertsInvalid.WithLabelValues().Inc()
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		log.Error(err)
+		log.Errorf("failed to unmarshal: %v", err)
 		return
 	}
 

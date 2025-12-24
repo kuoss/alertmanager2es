@@ -1,3 +1,5 @@
+# docker-compose.yaml
+
 services:
   ###########################
   # OpenSearch
@@ -67,6 +69,7 @@ services:
   # Alertmanager2opensearch
   ###########################
   alertmanager2opensearch:
+    # build: ../
     image: ghcr.io/kuoss/alertmanager2opensearch
     container_name: alertmanager2opensearch
     command:
@@ -75,3 +78,5 @@ services:
       - 9097:9097
     expose:
       - "9097"
+    volumes:
+      - ./etc/alertmanager.yaml:/etc/alertmanager/alertmanager.yml:ro
